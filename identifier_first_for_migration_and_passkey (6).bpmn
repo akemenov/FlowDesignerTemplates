@@ -1,0 +1,418 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn2:definitions xmlns:bpmn2="http://www.omg.org/spec/BPMN/20100524/MODEL" exporter="Camunda Modeler" exporterVersion="5.0.0" id="_FXeIoKhnEeOC4LOKh_69JQ" targetNamespace="isv_customtasks" xmlns:bioc="http://bpmn.io/schema/bpmn/biocolor/1.0" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:color="http://www.omg.org/spec/BPMN/non-normative/color/1.0" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:isv="http://ibm.com/bpmn/isv" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.omg.org/spec/BPMN/20100524/MODEL BPMN20.xsd">
+	<bpmn2:process camunda:historyTimeToLive="1" id="identifier_first_for_migration_and_passkey" isExecutable="true" isv:propertiesSchemaVersion="1.0" name="Identifier First for Migration and Passkey">
+		<bpmn2:startEvent camunda:displayName="Start" id="Event_0onayf9">
+			<bpmn2:outgoing>Flow_0z1d4yc</bpmn2:outgoing>
+		</bpmn2:startEvent>
+		<bpmn2:serviceTask camunda:class="com.ibm.security.access.workflow.camunda.customTaskListener.RenderHTMLTask" id="isv_page_1697570836960_customId" name="Ask for username">
+			<bpmn2:extensionElements>
+				<isv:inputOutput>
+					<isv:inputParameter id="themeId" name="themeId">3c124183-8ec9-457d-acb5-06e46ccd4364</isv:inputParameter>
+					<isv:inputParameter id="templatename" name="templateName">custom_page1</isv:inputParameter>
+					<isv:inputParameter id="callback" name="callback"/>
+					<isv:inputParameter id="signal" name="signal">onUsernameSubmitted</isv:inputParameter>
+				</isv:inputOutput>
+			</bpmn2:extensionElements>
+			<bpmn2:incoming>Flow_0z1d4yc</bpmn2:incoming>
+			<bpmn2:outgoing>Flow_0tzu3ox</bpmn2:outgoing>
+		</bpmn2:serviceTask>
+		<bpmn2:sequenceFlow id="Flow_0z1d4yc" sourceRef="Event_0onayf9" targetRef="isv_page_1697570836960_customId"/>
+		<bpmn2:intermediateCatchEvent id="Event_1q3gzs8_customId" name="Identity known">
+			<bpmn2:incoming>Flow_0tzu3ox</bpmn2:incoming>
+			<bpmn2:outgoing>Flow_1u7j5av</bpmn2:outgoing>
+			<bpmn2:messageEventDefinition id="MessageEventDefinition_0belwzn" messageRef="Message_1godub8"/>
+		</bpmn2:intermediateCatchEvent>
+		<bpmn2:sequenceFlow id="Flow_0tzu3ox" sourceRef="isv_page_1697570836960_customId" targetRef="Event_1q3gzs8_customId"/>
+		<bpmn2:serviceTask camunda:class="com.ibm.security.access.workflow.camunda.customTaskListener.FetchUserTask" id="isv_fetch_user_1697570969183_customId" name="Fetch user">
+			<bpmn2:extensionElements>
+				<isv:inputOutput>
+					<isv:inputParameter id="userid" name="userid">${S(workflow_context).prop("username").stringValue()}</isv:inputParameter>
+					<isv:outputParameter id="user" name="user"/>
+				</isv:inputOutput>
+			</bpmn2:extensionElements>
+			<bpmn2:incoming>Flow_1u7j5av</bpmn2:incoming>
+			<bpmn2:outgoing>Flow_0b28h0j</bpmn2:outgoing>
+		</bpmn2:serviceTask>
+		<bpmn2:sequenceFlow id="Flow_1u7j5av" sourceRef="Event_1q3gzs8_customId" targetRef="isv_fetch_user_1697570969183_customId"/>
+		<bpmn2:serviceTask camunda:class="com.ibm.security.access.workflow.camunda.customTaskListener.CustomRuleTask" id="isv_function_1697571034565_customId" name="Compute the IdP URL">
+			<bpmn2:extensionElements>
+				<isv:inputOutput>
+					<isv:inputParameter id="inputData" name="inputData">statements:
+- context: "theme := has(ctx.themeId) ? ctx.themeId : ''"
+- context: "identitySourceIds := has(ctx.identity_source_ids) ? ctx.identity_source_ids : ''"
+- context: "clientId := has(ctx.client_id) ? ctx.client_id : ''"
+- context: "postUrl := has(ctx.Target) &amp;&amp; ctx.Target != '' ? ctx.Target : 'https://' + ctx.__tenantid + '/usc'"
+- context: "postUrl = context.postUrl.startsWith('/') ? 'https://' + ctx.__tenantid + context.postUrl : context.postUrl"
+- context: "realm := user != null &amp;&amp; user.getCustomValue('isMigrated') == 'true' ? 'cloudIdentityRealm' : 'ActiveDirectory'"
+- return: &gt;
+    has(idsuser.uid) ? 
+        { 
+            "auth": "true", 
+            "post_url": context.postUrl
+        } : {
+            "auth": "false", 
+            'loginUrl': 'https://' + ctx.__tenantid + '/idaas/mtfim/sps/idaas/login?runtime=true&amp;login_hint=' + ctx.username + '&amp;realm_hint=' + context.realm + '&amp;themeId=' + context.theme + '&amp;identity_source_ids=' + context.identitySourceIds + '&amp;client_id=' + context.clientId,
+            "post_url": context.postUrl
+        }</isv:inputParameter>
+					<isv:outputParameter id="json" name="JSON"/>
+				</isv:inputOutput>
+			</bpmn2:extensionElements>
+			<bpmn2:incoming>Flow_0b28h0j</bpmn2:incoming>
+			<bpmn2:outgoing>Flow_0n6owfv</bpmn2:outgoing>
+		</bpmn2:serviceTask>
+		<bpmn2:sequenceFlow id="Flow_0b28h0j" sourceRef="isv_fetch_user_1697570969183_customId" targetRef="isv_function_1697571034565_customId"/>
+		<bpmn2:exclusiveGateway id="Gateway_08bl4lz_customId">
+			<bpmn2:incoming>Flow_0n6owfv</bpmn2:incoming>
+			<bpmn2:outgoing>Flow_1thafhn</bpmn2:outgoing>
+			<bpmn2:outgoing>Flow_1u1my7t</bpmn2:outgoing>
+		</bpmn2:exclusiveGateway>
+		<bpmn2:serviceTask camunda:class="com.ibm.security.access.workflow.camunda.customTaskListener.RedirectTask" id="isv_redirect_1697571329817_customId" name="User Authentication">
+			<bpmn2:extensionElements>
+				<isv:inputOutput>
+					<isv:inputParameter id="redirectUrl" name="redirectUrl">${S(workflow_context).prop("loginUrl").stringValue()}&amp;Target=WORKFLOW_CALLBACK_URL</isv:inputParameter>
+					<isv:inputParameter id="callback" name="callback"/>
+					<isv:inputParameter id="signal" name="signal">onLogin</isv:inputParameter>
+				</isv:inputOutput>
+			</bpmn2:extensionElements>
+			<bpmn2:incoming>Flow_1thafhn</bpmn2:incoming>
+			<bpmn2:outgoing>Flow_1b6ue4b</bpmn2:outgoing>
+		</bpmn2:serviceTask>
+		<bpmn2:sequenceFlow id="Flow_1thafhn" sourceRef="Gateway_08bl4lz_customId" targetRef="isv_redirect_1697571329817_customId">
+			<bpmn2:conditionExpression xsi:type="bpmn2:tFormalExpression">${S(workflow_context).prop("auth").stringValue() == "false" }</bpmn2:conditionExpression>
+		</bpmn2:sequenceFlow>
+		<bpmn2:serviceTask camunda:class="com.ibm.security.access.workflow.camunda.customTaskListener.RedirectTask" id="isv_redirect_1697571471378_customId" name="Continue the flow">
+			<bpmn2:extensionElements>
+				<isv:inputOutput>
+					<isv:inputParameter id="redirectUrl" name="redirectUrl">${S(workflow_context).prop("post_url").stringValue()}</isv:inputParameter>
+					<isv:inputParameter id="callback" name="callback"/>
+					<isv:inputParameter id="signal" name="signal"/>
+				</isv:inputOutput>
+			</bpmn2:extensionElements>
+			<bpmn2:incoming>Flow_1u1my7t</bpmn2:incoming>
+			<bpmn2:incoming>Flow_03jelau</bpmn2:incoming>
+			<bpmn2:incoming>Flow_0ay12hn</bpmn2:incoming>
+			<bpmn2:outgoing>Flow_00kghol</bpmn2:outgoing>
+		</bpmn2:serviceTask>
+		<bpmn2:sequenceFlow id="Flow_0n6owfv" sourceRef="isv_function_1697571034565_customId" targetRef="Gateway_08bl4lz_customId"/>
+		<bpmn2:sequenceFlow id="Flow_1u1my7t" name="Already authenticated" sourceRef="Gateway_08bl4lz_customId" targetRef="isv_redirect_1697571471378_customId">
+			<bpmn2:conditionExpression xsi:type="bpmn2:tFormalExpression">${S(workflow_context).prop("auth").stringValue() == "true" }</bpmn2:conditionExpression>
+		</bpmn2:sequenceFlow>
+		<bpmn2:endEvent camunda:displayName="End" id="Event_0wdx4t2_customId">
+			<bpmn2:incoming>Flow_00kghol</bpmn2:incoming>
+			<bpmn2:incoming>Flow_0s7xdqm</bpmn2:incoming>
+		</bpmn2:endEvent>
+		<bpmn2:sequenceFlow id="Flow_00kghol" sourceRef="isv_redirect_1697571471378_customId" targetRef="Event_0wdx4t2_customId"/>
+		<bpmn2:intermediateCatchEvent id="Event_0kdjlld_customId" name="Login completed">
+			<bpmn2:incoming>Flow_1b6ue4b</bpmn2:incoming>
+			<bpmn2:outgoing>Flow_0k5mzge</bpmn2:outgoing>
+			<bpmn2:messageEventDefinition id="MessageEventDefinition_1jm83fe" messageRef="Message_0ixed2b"/>
+		</bpmn2:intermediateCatchEvent>
+		<bpmn2:sequenceFlow id="Flow_1b6ue4b" name="" sourceRef="isv_redirect_1697571329817_customId" targetRef="Event_0kdjlld_customId"/>
+		<bpmn2:serviceTask camunda:class="com.ibm.security.access.workflow.camunda.customTaskListener.CustomRuleTask" id="isv_function_1697572969137_customId" name="Update as migrated">
+			<bpmn2:extensionElements>
+				<isv:inputOutput>
+					<isv:inputParameter id="inputData" name="inputData">statements:
+- if:
+    match: idsuser.getValue('realmName') != "ActiveDirectory"
+    block:
+      - return: &gt;-
+          {
+              "updated": "true",
+              "user": (user != null &amp;&amp; has(user.id) ? user 
+                : {
+                    "id": idsuser.getValue("uid")
+                  })
+          }
+- context: "token := oauth.getBearerToken('https://' + ctx.__tenantid + '/oauth2/token', '722b1afd-2423-4c1c-aa18-c61454709f7f', 'TbZAfnMBk0')"
+- context: &gt;
+    ops := [{
+            "op": "add",
+            "path": "urn:ietf:params:scim:schemas:extension:ibm:2.0:User:customAttributes",
+            "value": [
+                {
+                    "name": "isMigrated",
+                    "values": [
+                        "true"
+                    ]
+                }
+            ]},
+            {
+            "op": "add",
+            "path": "urn:ietf:params:scim:schemas:extension:ibm:2.0:Notification:notifyType",
+            "value": "NONE"
+        }]
+- context: &gt;-
+    payload := jsonToString({
+        "schemas": [
+            "urn:ietf:params:scim:api:messages:2.0:PatchOp"
+        ],
+        "Operations": context.ops
+    })
+- context: &gt;-
+    result := hc.Patch('https://' + ctx.__tenantid + '/v2.0/Users/' + idsuser.getValue('uid'), {
+        "Authorization": "Bearer " + context.token,
+        "Content-Type": "application/scim+json"
+    }, context.payload)
+- return: &gt;-
+    {
+        "updated": string(context.result.statusCode == "204"),
+        "trace": (has(ctx.debug) &amp;&amp; ctx.debug == "true") ? 
+            jsonToString({
+                "request": stringToJson(context.payload),
+                "response": context.result
+            }) : "",
+        "user": (user != null &amp;&amp; has(user.id) ? user 
+        : {
+            "id": idsuser.getValue("uid")
+          })
+    }</isv:inputParameter>
+					<isv:outputParameter id="json" name="JSON"/>
+				</isv:inputOutput>
+			</bpmn2:extensionElements>
+			<bpmn2:incoming>Flow_0k5mzge</bpmn2:incoming>
+			<bpmn2:outgoing>Flow_0u4awh3</bpmn2:outgoing>
+		</bpmn2:serviceTask>
+		<bpmn2:sequenceFlow id="Flow_0k5mzge" sourceRef="Event_0kdjlld_customId" targetRef="isv_function_1697572969137_customId"/>
+		<bpmn2:exclusiveGateway id="Gateway_0ag9y79_customId">
+			<bpmn2:incoming>Flow_0u4awh3</bpmn2:incoming>
+			<bpmn2:outgoing>Flow_0ezncpx</bpmn2:outgoing>
+			<bpmn2:outgoing>Flow_0y48phm</bpmn2:outgoing>
+		</bpmn2:exclusiveGateway>
+		<bpmn2:sequenceFlow id="Flow_0u4awh3" sourceRef="isv_function_1697572969137_customId" targetRef="Gateway_0ag9y79_customId"/>
+		<bpmn2:serviceTask camunda:class="com.ibm.security.access.workflow.camunda.customTaskListener.RenderHTMLTask" id="isv_page_1697573042013_customId" name="Error page">
+			<bpmn2:extensionElements>
+				<isv:inputOutput>
+					<isv:inputParameter id="themeId" name="themeId">3c124183-8ec9-457d-acb5-06e46ccd4364</isv:inputParameter>
+					<isv:inputParameter id="templatename" name="templateName">custom_page2</isv:inputParameter>
+					<isv:inputParameter id="callback" name="callback"/>
+					<isv:inputParameter id="signal" name="signal"/>
+				</isv:inputOutput>
+			</bpmn2:extensionElements>
+			<bpmn2:incoming>Flow_0ezncpx</bpmn2:incoming>
+			<bpmn2:outgoing>Flow_0s7xdqm</bpmn2:outgoing>
+		</bpmn2:serviceTask>
+		<bpmn2:sequenceFlow id="Flow_0ezncpx" sourceRef="Gateway_0ag9y79_customId" targetRef="isv_page_1697573042013_customId">
+			<bpmn2:conditionExpression xsi:type="bpmn2:tFormalExpression">${S(workflow_context).prop("updated").stringValue() != "true" }</bpmn2:conditionExpression>
+		</bpmn2:sequenceFlow>
+		<bpmn2:sequenceFlow id="Flow_0s7xdqm" sourceRef="isv_page_1697573042013_customId" targetRef="Event_0wdx4t2_customId"/>
+		<bpmn2:serviceTask camunda:class="com.ibm.security.access.workflow.camunda.customTaskListener.CustomRuleTask" id="isv_function_1697573195654_customId" name="Check for qr">
+			<bpmn2:extensionElements>
+				<isv:inputOutput>
+					<isv:inputParameter id="inputData" name="inputData">{
+    "haspasskeys": string(user.getCustomValue('isMigrated') == "true"),
+    "passkeyUrl": 'https://' + ctx.__tenantid + '/authsvc/mtfim/sps/authsvc?PolicyId=urn:ibm:security:authentication:asf:enrollmfa&amp;factors=signatures&amp;themeId=' + (has(ctx.themeId) ? ctx.themeId : '')
+}</isv:inputParameter>
+					<isv:outputParameter id="json" name="JSON"/>
+				</isv:inputOutput>
+			</bpmn2:extensionElements>
+			<bpmn2:incoming>Flow_0y48phm</bpmn2:incoming>
+			<bpmn2:outgoing>Flow_1ezravq</bpmn2:outgoing>
+		</bpmn2:serviceTask>
+		<bpmn2:sequenceFlow id="Flow_0y48phm" name="Successfully Updated" sourceRef="Gateway_0ag9y79_customId" targetRef="isv_function_1697573195654_customId"/>
+		<bpmn2:exclusiveGateway id="Gateway_0a28k14_customId">
+			<bpmn2:incoming>Flow_1ezravq</bpmn2:incoming>
+			<bpmn2:outgoing>Flow_0fgg0jj</bpmn2:outgoing>
+			<bpmn2:outgoing>Flow_03jelau</bpmn2:outgoing>
+		</bpmn2:exclusiveGateway>
+		<bpmn2:sequenceFlow id="Flow_1ezravq" sourceRef="isv_function_1697573195654_customId" targetRef="Gateway_0a28k14_customId"/>
+		<bpmn2:serviceTask camunda:class="com.ibm.security.access.workflow.camunda.customTaskListener.RedirectTask" id="isv_redirect_1697573614577_customId" name="Enroll passkey">
+			<bpmn2:extensionElements>
+				<isv:inputOutput>
+					<isv:inputParameter id="redirectUrl" name="redirectUrl">${S(workflow_context).prop("passkeyUrl").stringValue()}&amp;Target=WORKFLOW_CALLBACK_URL</isv:inputParameter>
+					<isv:inputParameter id="callback" name="callback"/>
+					<isv:inputParameter id="signal" name="signal">onPasskey</isv:inputParameter>
+				</isv:inputOutput>
+			</bpmn2:extensionElements>
+			<bpmn2:incoming>Flow_0fgg0jj</bpmn2:incoming>
+			<bpmn2:outgoing>Flow_118bmxm</bpmn2:outgoing>
+		</bpmn2:serviceTask>
+		<bpmn2:sequenceFlow id="Flow_0fgg0jj" sourceRef="Gateway_0a28k14_customId" targetRef="isv_redirect_1697573614577_customId">
+			<bpmn2:conditionExpression xsi:type="bpmn2:tFormalExpression">${S(workflow_context).prop("haspasskeys").stringValue() != "true" }</bpmn2:conditionExpression>
+		</bpmn2:sequenceFlow>
+		<bpmn2:sequenceFlow id="Flow_03jelau" name="Passkey Registered" sourceRef="Gateway_0a28k14_customId" targetRef="isv_redirect_1697571471378_customId">
+			<bpmn2:conditionExpression xsi:type="bpmn2:tFormalExpression">${S(workflow_context).prop("haspasskeys").stringValue() == "true" }</bpmn2:conditionExpression>
+		</bpmn2:sequenceFlow>
+		<bpmn2:intermediateCatchEvent id="Event_1wxsldv_customId" name="Passkey registration completed">
+			<bpmn2:incoming>Flow_118bmxm</bpmn2:incoming>
+			<bpmn2:outgoing>Flow_0ay12hn</bpmn2:outgoing>
+			<bpmn2:messageEventDefinition id="MessageEventDefinition_1l9tlj6" messageRef="Message_16ois19"/>
+		</bpmn2:intermediateCatchEvent>
+		<bpmn2:sequenceFlow id="Flow_0ay12hn" sourceRef="Event_1wxsldv_customId" targetRef="isv_redirect_1697571471378_customId"/>
+		<bpmn2:sequenceFlow id="Flow_118bmxm" sourceRef="isv_redirect_1697573614577_customId" targetRef="Event_1wxsldv_customId"/>
+	</bpmn2:process>
+	<bpmn2:message id="Message_1godub8" name="onUsernameSubmitted"/>
+	<bpmn2:message id="Message_0ixed2b" name="onLogin"/>
+	<bpmn2:message id="Message_16ois19" name="onPasskey"/>
+	<bpmndi:BPMNDiagram id="BPMNDiagram_1">
+		<bpmndi:BPMNPlane bpmnElement="identifier_first_for_migration_and_passkey" id="BPMNPlane_1">
+			<bpmndi:BPMNShape bioc:stroke="#161616" bpmnElement="Event_0onayf9" color:border-color="#161616" id="Event_0onayf9_di">
+				<dc:Bounds height="36" width="36" x="152" y="82"/>
+				<bpmndi:BPMNLabel color:color="#161616">
+					<dc:Bounds height="16" width="31" x="155" y="53"/>
+				</bpmndi:BPMNLabel>
+			</bpmndi:BPMNShape>
+			<bpmndi:BPMNShape bioc:stroke="#161616" bpmnElement="isv_page_1697570836960_customId" color:border-color="#161616" id="Activity_0yhtyzc_di">
+				<dc:Bounds height="76" width="188" x="76" y="182"/>
+				<bpmndi:BPMNLabel/>
+			</bpmndi:BPMNShape>
+			<bpmndi:BPMNShape bioc:stroke="#161616" bpmnElement="Event_1q3gzs8_customId" color:border-color="#161616" id="Event_1q3gzs8_di">
+				<dc:Bounds height="36" width="36" x="152" y="312"/>
+				<bpmndi:BPMNLabel color:color="#161616">
+					<dc:Bounds height="32" width="50" x="65" y="323"/>
+				</bpmndi:BPMNLabel>
+			</bpmndi:BPMNShape>
+			<bpmndi:BPMNShape bioc:stroke="#161616" bpmnElement="isv_fetch_user_1697570969183_customId" color:border-color="#161616" id="Activity_03j0trs_di">
+				<dc:Bounds height="76" width="188" x="336" y="292"/>
+			</bpmndi:BPMNShape>
+			<bpmndi:BPMNShape bioc:stroke="#161616" bpmnElement="isv_function_1697571034565_customId" color:border-color="#161616" id="Activity_0a0zyv7_di">
+				<dc:Bounds height="76" width="188" x="76" y="442"/>
+				<bpmndi:BPMNLabel/>
+			</bpmndi:BPMNShape>
+			<bpmndi:BPMNShape bioc:stroke="#161616" bpmnElement="Gateway_08bl4lz_customId" color:border-color="#161616" id="Gateway_08bl4lz_di" isMarkerVisible="true">
+				<dc:Bounds height="50" width="50" x="345" y="455"/>
+			</bpmndi:BPMNShape>
+			<bpmndi:BPMNShape bioc:stroke="#161616" bpmnElement="isv_redirect_1697571329817_customId" color:border-color="#161616" id="Activity_0repkoa_di">
+				<dc:Bounds height="76" width="188" x="456" y="442"/>
+				<bpmndi:BPMNLabel/>
+			</bpmndi:BPMNShape>
+			<bpmndi:BPMNShape bioc:stroke="#161616" bpmnElement="isv_redirect_1697571471378_customId" color:border-color="#161616" id="Activity_0hbzf4l_di">
+				<dc:Bounds height="76" width="188" x="276" y="922"/>
+				<bpmndi:BPMNLabel/>
+			</bpmndi:BPMNShape>
+			<bpmndi:BPMNShape bioc:stroke="#161616" bpmnElement="Event_0wdx4t2_customId" color:border-color="#161616" id="Event_0wdx4t2_di">
+				<dc:Bounds height="36" width="36" x="352" y="1042"/>
+				<bpmndi:BPMNLabel color:color="#161616">
+					<dc:Bounds height="16" width="24" x="358" y="1085"/>
+				</bpmndi:BPMNLabel>
+			</bpmndi:BPMNShape>
+			<bpmndi:BPMNShape bioc:stroke="#161616" bpmnElement="Event_0kdjlld_customId" color:border-color="#161616" id="Event_0kdjlld_di">
+				<dc:Bounds height="36" width="36" x="532" y="572"/>
+				<bpmndi:BPMNLabel color:color="#161616">
+					<dc:Bounds height="32" width="65" x="427" y="583"/>
+				</bpmndi:BPMNLabel>
+			</bpmndi:BPMNShape>
+			<bpmndi:BPMNShape bioc:stroke="#161616" bpmnElement="isv_function_1697572969137_customId" color:border-color="#161616" id="Activity_1r4macy_di">
+				<dc:Bounds height="76" width="188" x="656" y="552"/>
+				<bpmndi:BPMNLabel/>
+			</bpmndi:BPMNShape>
+			<bpmndi:BPMNShape bioc:stroke="#161616" bpmnElement="Gateway_0ag9y79_customId" color:border-color="#161616" id="Gateway_0ag9y79_di" isMarkerVisible="true">
+				<dc:Bounds height="50" width="50" x="945" y="565"/>
+			</bpmndi:BPMNShape>
+			<bpmndi:BPMNShape bioc:stroke="#175ffe" bpmnElement="isv_page_1697573042013_customId" color:border-color="#175ffe" id="Activity_1v8p3jn_di">
+				<dc:Bounds height="76" width="188" x="1076" y="552"/>
+				<bpmndi:BPMNLabel/>
+			</bpmndi:BPMNShape>
+			<bpmndi:BPMNShape bioc:stroke="#161616" bpmnElement="isv_function_1697573195654_customId" color:border-color="#161616" id="Activity_072wrki_di">
+				<dc:Bounds height="76" width="188" x="656" y="702"/>
+				<bpmndi:BPMNLabel/>
+			</bpmndi:BPMNShape>
+			<bpmndi:BPMNShape bioc:stroke="#161616" bpmnElement="Gateway_0a28k14_customId" color:border-color="#161616" id="Gateway_0a28k14_di" isMarkerVisible="true">
+				<dc:Bounds height="50" width="50" x="725" y="825"/>
+			</bpmndi:BPMNShape>
+			<bpmndi:BPMNShape bioc:stroke="#161616" bpmnElement="isv_redirect_1697573614577_customId" color:border-color="#161616" id="Activity_1cyjzmx_di">
+				<dc:Bounds height="76" width="188" x="656" y="922"/>
+				<bpmndi:BPMNLabel/>
+			</bpmndi:BPMNShape>
+			<bpmndi:BPMNShape bioc:stroke="#161616" bpmnElement="Event_1wxsldv_customId" color:border-color="#161616" id="Event_1wxsldv_di">
+				<dc:Bounds height="36" width="36" x="552" y="942"/>
+				<bpmndi:BPMNLabel color:color="#161616">
+					<dc:Bounds height="47" width="71" x="541" y="985"/>
+				</bpmndi:BPMNLabel>
+			</bpmndi:BPMNShape>
+			<bpmndi:BPMNEdge bioc:stroke="#161616" bpmnElement="Flow_0z1d4yc" color:border-color="#161616" id="Flow_0z1d4yc_di">
+				<di:waypoint x="170" y="120"/>
+				<di:waypoint x="170" y="182"/>
+			</bpmndi:BPMNEdge>
+			<bpmndi:BPMNEdge bioc:stroke="#161616" bpmnElement="Flow_0tzu3ox" color:border-color="#161616" id="Flow_0tzu3ox_di">
+				<di:waypoint x="170" y="258"/>
+				<di:waypoint x="170" y="312"/>
+			</bpmndi:BPMNEdge>
+			<bpmndi:BPMNEdge bioc:stroke="#161616" bpmnElement="Flow_1u7j5av" color:border-color="#161616" id="Flow_1u7j5av_di">
+				<di:waypoint x="188" y="330"/>
+				<di:waypoint x="336" y="330"/>
+			</bpmndi:BPMNEdge>
+			<bpmndi:BPMNEdge bioc:stroke="#161616" bpmnElement="Flow_0b28h0j" color:border-color="#161616" id="Flow_0b28h0j_di">
+				<di:waypoint x="430" y="368"/>
+				<di:waypoint x="430" y="390"/>
+				<di:waypoint x="170" y="390"/>
+				<di:waypoint x="170" y="442"/>
+			</bpmndi:BPMNEdge>
+			<bpmndi:BPMNEdge bioc:stroke="#161616" bpmnElement="Flow_1thafhn" color:border-color="#161616" id="Flow_1thafhn_di">
+				<di:waypoint x="395" y="480"/>
+				<di:waypoint x="456" y="480"/>
+			</bpmndi:BPMNEdge>
+			<bpmndi:BPMNEdge bioc:stroke="#161616" bpmnElement="Flow_0n6owfv" color:border-color="#161616" id="Flow_0n6owfv_di">
+				<di:waypoint x="264" y="480"/>
+				<di:waypoint x="345" y="480"/>
+			</bpmndi:BPMNEdge>
+			<bpmndi:BPMNEdge bioc:stroke="#161616" bpmnElement="Flow_1u1my7t" color:border-color="#161616" id="Flow_1u1my7t_di">
+				<di:waypoint x="370" y="505"/>
+				<di:waypoint x="370" y="922"/>
+				<bpmndi:BPMNLabel color:color="#161616">
+					<dc:Bounds height="32" width="86" x="267" y="703"/>
+				</bpmndi:BPMNLabel>
+			</bpmndi:BPMNEdge>
+			<bpmndi:BPMNEdge bioc:stroke="#161616" bpmnElement="Flow_00kghol" color:border-color="#161616" id="Flow_00kghol_di">
+				<di:waypoint x="370" y="998"/>
+				<di:waypoint x="370" y="1040"/>
+			</bpmndi:BPMNEdge>
+			<bpmndi:BPMNEdge bioc:stroke="#161616" bpmnElement="Flow_1b6ue4b" color:border-color="#161616" id="Flow_1b6ue4b_di">
+				<di:waypoint x="550" y="518"/>
+				<di:waypoint x="550" y="572"/>
+				<bpmndi:BPMNLabel>
+					<dc:Bounds height="14" width="7" x="562" y="542"/>
+				</bpmndi:BPMNLabel>
+			</bpmndi:BPMNEdge>
+			<bpmndi:BPMNEdge bioc:stroke="#161616" bpmnElement="Flow_0k5mzge" color:border-color="#161616" id="Flow_0k5mzge_di">
+				<di:waypoint x="568" y="590"/>
+				<di:waypoint x="656" y="590"/>
+			</bpmndi:BPMNEdge>
+			<bpmndi:BPMNEdge bioc:stroke="#161616" bpmnElement="Flow_0u4awh3" color:border-color="#161616" id="Flow_0u4awh3_di">
+				<di:waypoint x="844" y="590"/>
+				<di:waypoint x="945" y="590"/>
+			</bpmndi:BPMNEdge>
+			<bpmndi:BPMNEdge bioc:stroke="#161616" bpmnElement="Flow_0ezncpx" color:border-color="#161616" id="Flow_0ezncpx_di">
+				<di:waypoint x="995" y="590"/>
+				<di:waypoint x="1076" y="590"/>
+			</bpmndi:BPMNEdge>
+			<bpmndi:BPMNEdge bioc:stroke="#161616" bpmnElement="Flow_0s7xdqm" color:border-color="#161616" id="Flow_0s7xdqm_di">
+				<di:waypoint x="1264" y="590"/>
+				<di:waypoint x="1310" y="590"/>
+				<di:waypoint x="1310" y="1060"/>
+				<di:waypoint x="433" y="1060"/>
+			</bpmndi:BPMNEdge>
+			<bpmndi:BPMNEdge bioc:stroke="#161616" bpmnElement="Flow_0y48phm" color:border-color="#161616" id="Flow_0y48phm_di">
+				<di:waypoint x="970" y="615"/>
+				<di:waypoint x="970" y="740"/>
+				<di:waypoint x="844" y="740"/>
+				<bpmndi:BPMNLabel color:color="#161616">
+					<dc:Bounds height="32" width="77" x="972" y="675"/>
+				</bpmndi:BPMNLabel>
+			</bpmndi:BPMNEdge>
+			<bpmndi:BPMNEdge bioc:stroke="#161616" bpmnElement="Flow_1ezravq" color:border-color="#161616" id="Flow_1ezravq_di">
+				<di:waypoint x="750" y="778"/>
+				<di:waypoint x="750" y="825"/>
+			</bpmndi:BPMNEdge>
+			<bpmndi:BPMNEdge bioc:stroke="#161616" bpmnElement="Flow_0fgg0jj" color:border-color="#161616" id="Flow_0fgg0jj_di">
+				<di:waypoint x="750" y="875"/>
+				<di:waypoint x="750" y="922"/>
+			</bpmndi:BPMNEdge>
+			<bpmndi:BPMNEdge bioc:stroke="#161616" bpmnElement="Flow_03jelau" color:border-color="#161616" id="Flow_03jelau_di">
+				<di:waypoint x="725" y="850"/>
+				<di:waypoint x="440" y="850"/>
+				<di:waypoint x="440" y="922"/>
+				<bpmndi:BPMNLabel color:color="#161616">
+					<dc:Bounds height="32" width="66" x="556" y="816"/>
+				</bpmndi:BPMNLabel>
+			</bpmndi:BPMNEdge>
+			<bpmndi:BPMNEdge bioc:stroke="#161616" bpmnElement="Flow_0ay12hn" color:border-color="#161616" id="Flow_0ay12hn_di">
+				<di:waypoint x="552" y="960"/>
+				<di:waypoint x="464" y="960"/>
+			</bpmndi:BPMNEdge>
+			<bpmndi:BPMNEdge bioc:stroke="#161616" bpmnElement="Flow_118bmxm" color:border-color="#161616" id="Flow_118bmxm_di">
+				<di:waypoint x="656" y="960"/>
+				<di:waypoint x="588" y="960"/>
+			</bpmndi:BPMNEdge>
+		</bpmndi:BPMNPlane>
+	</bpmndi:BPMNDiagram>
+</bpmn2:definitions>
